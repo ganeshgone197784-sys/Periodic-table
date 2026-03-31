@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>3D Periodic Table</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: #050510;
+    font-family: Arial;
+    color: white;
+}
+
+.element {
+    width: 110px;
+    height: 150px;
+    border-radius: 12px;
+    text-align: center;
+    cursor: pointer;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0,255,255,0.3);
+    box-shadow: 0 0 12px rgba(0,255,255,0.5);
+    transition: 0.3s;
+}
+
+.element:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 25px cyan;
+}
+
+.number { font-size: 12px; color: cyan; }
+.symbol { font-size: 32px; font-weight: bold; }
+.name { font-size: 11px; }
+
+#menu {
+    position: fixed;
+    top: 10px;
+    width: 100%;
+    text-align: center;
+    z-index: 10;
+}
+
+button {
+    padding: 8px 14px;
+    margin: 5px;
+    background: transparent;
+    border: 1px solid cyan;
+    color: cyan;
+    cursor: pointer;
+    border-radius: 6px;
+}
+
+button:hover {
+    background: cyan;
+    color: black;
+}
+
+#details {
+    position: fixed;
+    right: 10px;
+    top: 80px;
+    width: 240px;
+    padding: 15px;
+    background: rgba(0,0,0,0.85);
+    border: 1px solid cyan;
+    display: none;
+    border-radius: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="menu">
+<button onclick="transform(tableTargets)">Table</button>
+<button onclick="transform(sphereTargets)">Sphere</button>
+<button onclick="transform(helixTargets)">Helix</button>
+<button onclick="transform(gridTargets)">Grid</button>
+</div>
+
+<div id="details"></div>
+
+<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/renderers/CSS3DRenderer.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+
+<script>
+let camera, scene, renderer;
+let objects = [];
+let tableTargets=[], sphereTargets=[], helixTargets=[], gridTargets=[];
+
+init();
+animate();
+
+function init() {
+
+camera = new THREE.PerspectiveCamera(40, window.innerWidth/window.innerHeight, 1, 10000);
+camera.position.set(0, 0, 3000);
+
+scene = new THREE.Scene();
+scene.position.set(0,0,0);
+
+/* ===== 118 ELEMENTS ===== */
+const elements = [
+{symbol:"H",name:"Hydrogen",number:1,x:1,y:1},{symbol:"He",name:"Helium",number:2,x:18,y:1},
+{symbol:"Li",name:"Lithium",number:3,x:1,y:2},{symbol:"Be",name:"Beryllium",number:4,x:2,y:2},
+{symbol:"B",name:"Boron",number:5,x:13,y:2},{symbol:"C",name:"Carbon",number:6,x:14,y:2},
+{symbol:"N",name:"Nitrogen",number:7,x:15,y:2},{symbol:"O",name:"Oxygen",number:8,x:16,y:2},
+{symbol:"F",name:"Fluorine",number:9,x:17,y:2},{symbol:"Ne",name:"Neon",number:10,x:18,y:2},
+{symbol:"Na",name:"Sodium",number:11,x:1,y:3},{symbol:"Mg",name:"Magnesium",number:12,x:2,y:3},
+{symbol:"Al",name:"Aluminium",number:13,x:13,y:3},{symbol:"Si",name:"Silicon",number:14,x:14,y:3},
+{symbol:"P",name:"Phosphorus",number:15,x:15,y:3},{symbol:"S",name:"Sulfur",number:16,x:16,y:3},
+{symbol:"Cl",name:"Chlorine",number:17,x:17,y:3},{symbol:"Ar",name:"Argon",number:18,x:18,y:3},
+{symbol:"K",name:"Potassium",number:19,x:1,y:4},{symbol:"Ca",name:"Calcium",number:20,x:2,y:4},
+{symbol:"Sc",name:"Scandium",number:21,x:3,y:4},{symbol:"Ti",name:"Titanium",number:22,x:4,y:4},
+{symbol:"V",name:"Vanadium",number:23,x:5,y:4},{symbol:"Cr",name:"Chromium",number:24,x:6,y:4},
+{symbol:"Mn",name:"Manganese",number:25,x:7,y:4},{symbol:"Fe",name:"Iron",number:26,x:8,y:4},
+{symbol:"Co",name:"Cobalt",number:27,x:9,y:4},{symbol:"Ni",name:"Nickel",number:28,x:10,y:4},
+{symbol:"Cu",name:"Copper",number:29,x:11,y:4},{symbol:"Zn",name:"Zinc",number:30,x:12,y:4},
+{symbol:"Ga",name:"Gallium",number:31,x:13,y:4},{symbol:"Ge",name:"Germanium",number:32,x:14,y:4},
+{symbol:"As",name:"Arsenic",number:33,x:15,y:4},{symbol:"Se",name:"Selenium",number:34,x:16,y:4},
+{symbol:"Br",name:"Bromine",number:35,x:17,y:4},{symbol:"Kr",name:"Krypton",number:36,x:18,y:4},
+{symbol:"Rb",name:"Rubidium",number:37,x:1,y:5},{symbol:"Sr",name:"Strontium",number:38,x:2,y:5},
+{symbol:"Y",name:"Yttrium",number:39,x:3,y:5},{symbol:"Zr",name:"Zirconium",number:40,x:4,y:5},
+{symbol:"Nb",name:"Niobium",number:41,x:5,y:5},{symbol:"Mo",name:"Molybdenum",number:42,x:6,y:5},
+{symbol:"Tc",name:"Technetium",number:43,x:7,y:5},{symbol:"Ru",name:"Ruthenium",number:44,x:8,y:5},
+{symbol:"Rh",name:"Rhodium",number:45,x:9,y:5},{symbol:"Pd",name:"Palladium",number:46,x:10,y:5},
+{symbol:"Ag",name:"Silver",number:47,x:11,y:5},{symbol:"Cd",name:"Cadmium",number:48,x:12,y:5},
+{symbol:"In",name:"Indium",number:49,x:13,y:5},{symbol:"Sn",name:"Tin",number:50,x:14,y:5},
+{symbol:"Sb",name:"Antimony",number:51,x:15,y:5},{symbol:"Te",name:"Tellurium",number:52,x:16,y:5},
+{symbol:"I",name:"Iodine",number:53,x:17,y:5},{symbol:"Xe",name:"Xenon",number:54,x:18,y:5},
+{symbol:"Cs",name:"Cesium",number:55,x:1,y:6},{symbol:"Ba",name:"Barium",number:56,x:2,y:6},
+{symbol:"La",name:"Lanthanum",number:57,x:3,y:9},{symbol:"Ce",name:"Cerium",number:58,x:4,y:9},
+{symbol:"Pr",name:"Praseodymium",number:59,x:5,y:9},{symbol:"Nd",name:"Neodymium",number:60,x:6,y:9},
+{symbol:"Pm",name:"Promethium",number:61,x:7,y:9},{symbol:"Sm",name:"Samarium",number:62,x:8,y:9},
+{symbol:"Eu",name:"Europium",number:63,x:9,y:9},{symbol:"Gd",name:"Gadolinium",number:64,x:10,y:9},
+{symbol:"Tb",name:"Terbium",number:65,x:11,y:9},{symbol:"Dy",name:"Dysprosium",number:66,x:12,y:9},
+{symbol:"Ho",name:"Holmium",number:67,x:13,y:9},{symbol:"Er",name:"Erbium",number:68,x:14,y:9},
+{symbol:"Tm",name:"Thulium",number:69,x:15,y:9},{symbol:"Yb",name:"Ytterbium",number:70,x:16,y:9},
+{symbol:"Lu",name:"Lutetium",number:71,x:17,y:9},
+{symbol:"Hf",name:"Hafnium",number:72,x:4,y:6},{symbol:"Ta",name:"Tantalum",number:73,x:5,y:6},
+{symbol:"W",name:"Tungsten",number:74,x:6,y:6},{symbol:"Re",name:"Rhenium",number:75,x:7,y:6},
+{symbol:"Os",name:"Osmium",number:76,x:8,y:6},{symbol:"Ir",name:"Iridium",number:77,x:9,y:6},
+{symbol:"Pt",name:"Platinum",number:78,x:10,y:6},{symbol:"Au",name:"Gold",number:79,x:11,y:6},
+{symbol:"Hg",name:"Mercury",number:80,x:12,y:6},{symbol:"Tl",name:"Thallium",number:81,x:13,y:6},
+{symbol:"Pb",name:"Lead",number:82,x:14,y:6},{symbol:"Bi",name:"Bismuth",number:83,x:15,y:6},
+{symbol:"Po",name:"Polonium",number:84,x:16,y:6},{symbol:"At",name:"Astatine",number:85,x:17,y:6},
+{symbol:"Rn",name:"Radon",number:86,x:18,y:6},
+{symbol:"Fr",name:"Francium",number:87,x:1,y:7},{symbol:"Ra",name:"Radium",number:88,x:2,y:7},
+{symbol:"Ac",name:"Actinium",number:89,x:3,y:10},{symbol:"Th",name:"Thorium",number:90,x:4,y:10},
+{symbol:"Pa",name:"Protactinium",number:91,x:5,y:10},{symbol:"U",name:"Uranium",number:92,x:6,y:10},
+{symbol:"Np",name:"Neptunium",number:93,x:7,y:10},{symbol:"Pu",name:"Plutonium",number:94,x:8,y:10},
+{symbol:"Am",name:"Americium",number:95,x:9,y:10},{symbol:"Cm",name:"Curium",number:96,x:10,y:10},
+{symbol:"Bk",name:"Berkelium",number:97,x:11,y:10},{symbol:"Cf",name:"Californium",number:98,x:12,y:10},
+{symbol:"Es",name:"Einsteinium",number:99,x:13,y:10},{symbol:"Fm",name:"Fermium",number:100,x:14,y:10},
+{symbol:"Md",name:"Mendelevium",number:101,x:15,y:10},{symbol:"No",name:"Nobelium",number:102,x:16,y:10},
+{symbol:"Lr",name:"Lawrencium",number:103,x:17,y:10},
+{symbol:"Rf",name:"Rutherfordium",number:104,x:4,y:7},{symbol:"Db",name:"Dubnium",number:105,x:5,y:7},
+{symbol:"Sg",name:"Seaborgium",number:106,x:6,y:7},{symbol:"Bh",name:"Bohrium",number:107,x:7,y:7},
+{symbol:"Hs",name:"Hassium",number:108,x:8,y:7},{symbol:"Mt",name:"Meitnerium",number:109,x:9,y:7},
+{symbol:"Ds",name:"Darmstadtium",number:110,x:10,y:7},{symbol:"Rg",name:"Roentgenium",number:111,x:11,y:7},
+{symbol:"Cn",name:"Copernicium",number:112,x:12,y:7},{symbol:"Nh",name:"Nihonium",number:113,x:13,y:7},
+{symbol:"Fl",name:"Flerovium",number:114,x:14,y:7},{symbol:"Mc",name:"Moscovium",number:115,x:15,y:7},
+{symbol:"Lv",name:"Livermorium",number:116,x:16,y:7},{symbol:"Ts",name:"Tennessine",number:117,x:17,y:7},
+{symbol:"Og",name:"Oganesson",number:118,x:18,y:7}
+];
+
+/* CREATE ELEMENTS */
+elements.forEach((el,i)=>{
+let div=document.createElement("div");
+div.className="element";
+
+div.innerHTML=`
+<div class="number">${el.number}</div>
+<div class="symbol">${el.symbol}</div>
+<div class="name">${el.name}</div>
+`;
+
+div.onclick=()=>showDetails(el,div);
+
+let obj=new THREE.CSS3DObject(div);
+obj.position.x=Math.random()*4000-2000;
+obj.position.y=Math.random()*4000-2000;
+obj.position.z=Math.random()*4000-2000;
+
+scene.add(obj);
+objects.push(obj);
+
+/* FIXED CENTER TABLE */
+let target=new THREE.Object3D();
+target.position.x=(el.x - 9) * 140;
+target.position.y=(5 - el.y) * 180;
+tableTargets.push(target);
+});
+
+/* SPHERE */
+let vector=new THREE.Vector3();
+objects.forEach((_,i)=>{
+let phi=Math.acos(-1+(2*i)/objects.length);
+let theta=Math.sqrt(objects.length*Math.PI)*phi;
+
+let target=new THREE.Object3D();
+target.position.setFromSphericalCoords(800,phi,theta);
+vector.copy(target.position).multiplyScalar(2);
+target.lookAt(vector);
+
+sphereTargets.push(target);
+});
+
+/* HELIX */
+objects.forEach((_,i)=>{
+let theta=i*0.175+Math.PI;
+let y=-(i*8)+450;
+
+let target=new THREE.Object3D();
+target.position.setFromCylindricalCoords(900,theta,y);
+helixTargets.push(target);
+});
+
+/* GRID */
+objects.forEach((_,i)=>{
+let target=new THREE.Object3D();
+target.position.x=((i%5)*400)-800;
+target.position.y=(-(Math.floor(i/5)%5)*400)+800;
+target.position.z=(Math.floor(i/25))*1000-2000;
+gridTargets.push(target);
+});
+
+renderer=new THREE.CSS3DRenderer();
+renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.domElement.style.position="fixed";
+renderer.domElement.style.top="0";
+renderer.domElement.style.left="0";
+document.body.appendChild(renderer.domElement);
+
+transform(tableTargets,2000);
+}
+
+/* TRANSFORM */
+function transform(targets,duration=2000){
+TWEEN.removeAll();
+
+objects.forEach((obj,i)=>{
+let target=targets[i];
+
+new TWEEN.Tween(obj.position)
+.to({x:target.position.x,y:target.position.y,z:target.position.z},duration)
+.easing(TWEEN.Easing.Exponential.InOut)
+.start();
+});
+
+new TWEEN.Tween(this).to({},duration).onUpdate(render).start();
+}
+
+/* CLICK */
+function showDetails(el,div){
+div.style.transform="scale(1.6) rotateY(360deg)";
+
+document.getElementById("details").style.display="block";
+document.getElementById("details").innerHTML=`
+<h2>${el.name}</h2>
+<p><b>Symbol:</b> ${el.symbol}</p>
+<p><b>Atomic No:</b> ${el.number}</p>
+<p><b>Group:</b> ${el.x}</p>
+<p><b>Period:</b> ${el.y}</p>
+`;
+
+objects.forEach(obj=>{
+obj.position.x+=(Math.random()-0.5)*200;
+obj.position.y+=(Math.random()-0.5)*200;
+});
+}
+
+/* RESIZE FIX */
+window.addEventListener('resize', ()=>{
+camera.aspect=window.innerWidth/window.innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize(window.innerWidth,window.innerHeight);
+});
+
+/* ANIMATE */
+function animate(){
+requestAnimationFrame(animate);
+TWEEN.update();
+scene.rotation.y+=0.001;
+render();
+}
+
+function render(){
+renderer.render(scene,camera);
+}
+</script>
+
+</body>
+</html>
